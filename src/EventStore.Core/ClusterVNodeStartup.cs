@@ -20,6 +20,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -32,11 +33,6 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using MidFunc = System.Func<
-	Microsoft.AspNetCore.Http.HttpContext,
-	System.Func<System.Threading.Tasks.Task>,
-	System.Threading.Tasks.Task
->;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
@@ -114,8 +110,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
 
-		app.Map("/health", _statusCheck.Configure);
-		app.UseCors("default");
+		_statusCheck.MapLiveness(app.MapGroup("/health"));
 
 		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
 		// the resulting ClaimsPrinciple to HttpContext.User
@@ -332,38 +327,20 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			_startup = startup ?? throw new ArgumentNullException(nameof(startup));
 		}
 
-		public void Configure(IApplicationBuilder builder) =>
-			builder.Use(GetAndHeadOnly)
-				.UseRouter(router => router
-					.MapMiddlewareGet("live", inner => inner.Use(Live)));
+		public void MapLiveness(RouteGroupBuilder builder) {
+			builder.MapMethods("live", [HttpMethod.Get, HttpMethod.Head], Handler);
+			return;
 
-		private MidFunc Live => (context, next) => {
-			if (_startup._ready) {
-				if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
-				    int.TryParse(expected, out var statusCode)) {
-					context.Response.StatusCode = statusCode;
-				} else {
-					context.Response.StatusCode = _livecode;
-				}
-			} else {
-				context.Response.StatusCode = 503;
+			Task Handler(HttpContext context) {
+				context.Response.StatusCode = _startup._ready
+					? context.Request.Query.TryGetValue("liveCode", out var expected) && int.TryParse(expected, out var statusCode)
+						? statusCode
+						: _livecode
+					: 503;
+
+				return Task.CompletedTask;
 			}
-
-			return Task.CompletedTask;
-		};
-
-		private static MidFunc GetAndHeadOnly => (context, next) => {
-			switch (context.Request.Method) {
-				case "HEAD":
-					context.Request.Method = "GET";
-					return next();
-				case "GET":
-					return next();
-				default:
-					context.Response.StatusCode = 405;
-					return Task.CompletedTask;
-			}
-		};
+		}
 	}
 
 	bool OAuthEnabled => _plugableComponents.Any(x => x is { Enabled: true, Name: "OAuthAuthentication" });
