@@ -20,7 +20,6 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
-using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -111,6 +110,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		_mainBus.Subscribe(internalDispatcher);
 
 		_statusCheck.MapLiveness(app.MapGroup("/health"));
+		app.UseCors("default");
 
 		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
 		// the resulting ClaimsPrinciple to HttpContext.User
