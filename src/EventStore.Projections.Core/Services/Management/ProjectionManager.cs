@@ -703,7 +703,7 @@ public class ProjectionManager
 					ProjectionEventTypes.ProjectionDeleted,
 					false,
 					Helper.UTF8NoBom.GetBytes(message.Name),
-					Empty.ByteArray),
+					Empty.ByteArray, SchemaInfo.None, SchemaInfo.None),
 				SystemAccounts.System);
 
 		_isWritePending = true;
@@ -871,7 +871,7 @@ public class ProjectionManager
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
 				ExpectedVersion.NoStream,
 				new Event(registrationEventId, ProjectionEventTypes.ProjectionsInitialized, false, Empty.ByteArray,
-					Empty.ByteArray),
+					Empty.ByteArray, SchemaInfo.None, SchemaInfo.None),
 				SystemAccounts.System),
 			completed => WriteProjectionsInitializedCompleted(completed, registrationEventId, action));
 	}
@@ -980,7 +980,7 @@ public class ProjectionManager
 					ProjectionEventTypes.ProjectionCreated,
 					false,
 					Helper.UTF8NoBom.GetBytes(projection.Name),
-					Empty.ByteArray));
+					Empty.ByteArray, SchemaInfo.None, SchemaInfo.None));
 			} else {
 				_logger.Warning("PROJECTIONS: Should not be processing transient projections here.");
 			}
