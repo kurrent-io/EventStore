@@ -4,6 +4,7 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
+using JetBrains.Annotations;
 
 namespace EventStore.Core.Data;
 
@@ -67,5 +68,13 @@ public class Event {
 		Metadata = metadata ?? Array.Empty<byte>();
         DataSchemaInfo = dataSchemaInfo ?? SchemaInfo.None;
         MetadataSchemaInfo = metadataSchemaInfo ?? SchemaInfo.None;
+	}
+
+	public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
+		: this(eventId, eventType, isJson, data, metadata, SchemaInfo.None, SchemaInfo.None) {
+	}
+
+	public Event(Guid eventId, string eventType, bool isJson, string data, string metadata)
+		: this(eventId, eventType, isJson, data, metadata, SchemaInfo.None, SchemaInfo.None) {
 	}
 }
