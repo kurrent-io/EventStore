@@ -106,7 +106,9 @@ public class ScavengePointSource : IScavengePointSource {
 				eventType: SystemEventTypes.ScavengePoint,
 				isJson: true,
 				data: payload.ToJsonBytes(),
-				metadata: null),
+				metadata: null,
+                SchemaInfo.None,
+                SchemaInfo.None),
 			principal: SystemAccounts.System,
 			action: m => {
 				if (m.Result == OperationResult.Success) {

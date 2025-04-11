@@ -2,6 +2,7 @@
 // Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
+using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.LogAbstraction;
@@ -42,5 +43,24 @@ public interface IRecordFactory<TStreamId> : IRecordFactory {
 		PrepareFlags flags,
 		TStreamId eventType,
 		ReadOnlyMemory<byte> data,
-		ReadOnlyMemory<byte> metadata);
+		ReadOnlyMemory<byte> metadata,
+        SchemaInfo dataSchemaInfo,
+        SchemaInfo metadataSchemaInfo);
+
+	IPrepareLogRecord<TStreamId> CreatePrepare(
+		long logPosition,
+		Guid correlationId,
+		Guid eventId,
+		long transactionPosition,
+		int transactionOffset,
+		TStreamId eventStreamId,
+		long expectedVersion,
+		DateTime timeStamp,
+		PrepareFlags flags,
+		TStreamId eventType,
+		ReadOnlyMemory<byte> data,
+		ReadOnlyMemory<byte> metadata) {
+		return CreatePrepare(logPosition, correlationId, eventId, transactionPosition, transactionOffset, eventStreamId,
+			expectedVersion, timeStamp, flags, eventType, data, metadata, SchemaInfo.None, SchemaInfo.None);
+	}
 }
