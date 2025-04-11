@@ -3,8 +3,8 @@
 
 using System;
 using DotNext.Buffers;
-using EventStore.Core.LogAbstraction;
-using EventStore.Core.TransactionLog.LogRecords;
+using KurrentDB.Core.LogAbstraction;
+using KurrentDB.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;

@@ -3,14 +3,13 @@
 
 using System.Collections.Generic;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.Services.UserManagement;
+using KurrentDB.Core.Services.Transport.Http.Authentication;
+using KurrentDB.Core.Services.UserManagement;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {
 	namespace password_change_notification_reader {
-		public abstract class with_password_change_notification_reader<TLogFormat, TStreamId> :
-			user_management_service.TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
+		public abstract class with_password_change_notification_reader<TLogFormat, TStreamId> : user_management_service.TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
 			protected PasswordChangeNotificationReader _passwordChangeNotificationReader;
 
 			protected override void Given() {

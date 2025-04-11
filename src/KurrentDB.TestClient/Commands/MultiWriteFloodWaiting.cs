@@ -7,9 +7,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using EventStore.Client.Messages;
-using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Transport.Tcp;
+using KurrentDB.Common.Utils;
+using KurrentDB.Core.Data;
+using KurrentDB.Transport.Tcp;
 using OperationResult = EventStore.Client.Messages.OperationResult;
 
 namespace KurrentDB.TestClient.Commands;
@@ -98,7 +99,7 @@ internal class MultiWriteFloodWaitingProcessor : ICmdProcessor {
 							new NewEvent(Guid.NewGuid().ToByteArray(),
 								"type",
 								0, 0,
-								EventStore.Common.Utils.Helper.UTF8NoBom.GetBytes(data),
+								Helper.UTF8NoBom.GetBytes(data),
 								new byte[0])).ToArray(),
 						false);
 					var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());

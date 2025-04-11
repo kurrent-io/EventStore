@@ -4,25 +4,26 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Utils;
-using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
-using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
-using EventStore.Core.LogAbstraction;
-using EventStore.Core.Metrics;
-using EventStore.Core.Services;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
-using EventStore.LogCommon;
+using KurrentDB.Common.Utils;
+using KurrentDB.Core.Data;
+using KurrentDB.Core.DataStructures;
+using KurrentDB.Core.Index;
+using KurrentDB.Core.Index.Hashes;
+using KurrentDB.Core.LogAbstraction;
+using KurrentDB.Core.Metrics;
+using KurrentDB.Core.Services;
+using KurrentDB.Core.Services.Storage.ReaderIndex;
+using KurrentDB.Core.TransactionLog;
+using KurrentDB.Core.TransactionLog.Checkpoint;
+using KurrentDB.Core.TransactionLog.Chunks;
+using KurrentDB.Core.TransactionLog.LogRecords;
+using KurrentDB.Core.Util;
+using KurrentDB.LogCommon;
 using NUnit.Framework;
+using Serilog;
 
 namespace EventStore.Core.Tests.Services.Storage;
 
@@ -155,7 +156,7 @@ public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : Specificati
 			if (_completeLastChunkOnScavenge)
 				await (await Db.Manager.GetInitializedChunk(Db.Manager.ChunksCount - 1, CancellationToken.None))
 					.Complete(CancellationToken.None);
-			_scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, Db, new FakeTFScavengerLog(), TableIndex,
+			_scavenger = new TFChunkScavenger<TStreamId>(Log.Logger, Db, new FakeTFScavengerLog(), TableIndex,
 				ReadIndex, _logFormat.Metastreams);
 			await _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks,
 				scavengeIndex: _scavengeIndex);

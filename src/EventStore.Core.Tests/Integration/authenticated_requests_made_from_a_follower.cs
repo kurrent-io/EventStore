@@ -17,7 +17,7 @@ using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
 using NUnit.Framework;
-using ContentType = EventStore.Transport.Http.ContentType;
+using ContentType = KurrentDB.Transport.Http.ContentType;
 using StatusCode = Grpc.Core.StatusCode;
 
 namespace EventStore.Core.Tests.Integration;
@@ -112,9 +112,9 @@ public abstract class authenticated_requests_made_from_a_follower<TLogFormat, TS
 					CustomMetadata = ByteString.Empty,
 					Data = ByteString.Empty,
 					Metadata = {
-						{EventStore.Core.Services.Transport.Grpc.Constants.Metadata.Type, "-"}, {
-							EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentType,
-							EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentTypes
+						{Core.Services.Transport.Grpc.Constants.Metadata.Type, "-"}, {
+							Core.Services.Transport.Grpc.Constants.Metadata.ContentType,
+							Core.Services.Transport.Grpc.Constants.Metadata.ContentTypes
 								.ApplicationOctetStream
 						}
 					}

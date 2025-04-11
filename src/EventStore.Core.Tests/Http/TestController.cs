@@ -3,14 +3,15 @@
 
 using System;
 using System.Security.Claims;
-using EventStore.Common.Utils;
-using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Controllers;
+using System.Threading;
 using EventStore.Plugins.Authorization;
-using EventStore.Transport.Http;
-using EventStore.Transport.Http.Codecs;
-using EventStore.Transport.Http.EntityManagement;
+using KurrentDB.Common.Utils;
+using KurrentDB.Core.Bus;
+using KurrentDB.Core.Services.Transport.Http;
+using KurrentDB.Core.Services.Transport.Http.Controllers;
+using KurrentDB.Transport.Http;
+using KurrentDB.Transport.Http.Codecs;
+using KurrentDB.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Tests.Http;
 
@@ -82,7 +83,7 @@ public class TestController : CommunicationController {
 
 	private void TestTimeoutHandler(HttpEntityManager http, UriTemplateMatch match) {
 		var sleepFor = int.Parse(match.BoundVariables["sleepfor"]);
-		System.Threading.Thread.Sleep(sleepFor);
+		Thread.Sleep(sleepFor);
 		http.Reply("OK", 200, "OK", "text/plain");
 	}
 }

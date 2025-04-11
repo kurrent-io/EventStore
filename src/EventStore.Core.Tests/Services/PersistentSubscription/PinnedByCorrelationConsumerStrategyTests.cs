@@ -1,16 +1,16 @@
 // Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
 // Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
-namespace EventStore.Core.Tests.Services.PersistentSubscription;
-
 using System;
 using System.Text;
-using Core.Index.Hashes;
-using Core.Services;
-using Core.Services.PersistentSubscription;
-using Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Tests.Services.Replication;
+using KurrentDB.Core.Index.Hashes;
+using KurrentDB.Core.Services;
+using KurrentDB.Core.Services.PersistentSubscription;
+using KurrentDB.Core.Services.PersistentSubscription.ConsumerStrategy;
 using NUnit.Framework;
-using Replication;
+
+namespace EventStore.Core.Tests.Services.PersistentSubscription;
 
 [TestFixture]
 public class PinnedByCorrelationConsumerStrategyTests {
@@ -47,7 +47,7 @@ public class PinnedByCorrelationConsumerStrategyTests {
 		var client2Envelope = new FakeEnvelope();
 		var reader = new FakeCheckpointReader();
 
-		var sub = new PersistentSubscription(
+		var sub = new KurrentDB.Core.Services.PersistentSubscription.PersistentSubscription(
 			PersistentSubscriptionToStreamParamsBuilder.CreateFor("$ce-streamName", "groupName")
 				.WithEventLoader(new FakeStreamReader())
 				.WithCheckpointReader(reader)
@@ -96,7 +96,7 @@ public class PinnedByCorrelationConsumerStrategyTests {
 		var client2Envelope = new FakeEnvelope();
 		var reader = new FakeCheckpointReader();
 
-		var sub = new PersistentSubscription(
+		var sub = new KurrentDB.Core.Services.PersistentSubscription.PersistentSubscription(
 			PersistentSubscriptionToStreamParamsBuilder.CreateFor("$ce-streamName", "groupName")
 				.WithEventLoader(new FakeStreamReader())
 				.WithCheckpointReader(reader)

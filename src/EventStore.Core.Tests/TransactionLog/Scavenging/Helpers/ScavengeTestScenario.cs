@@ -5,17 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.DataStructures;
-using EventStore.Core.Index;
-using EventStore.Core.LogAbstraction;
-using EventStore.Core.Metrics;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
+using KurrentDB.Core.DataStructures;
+using KurrentDB.Core.Index;
+using KurrentDB.Core.LogAbstraction;
+using KurrentDB.Core.Metrics;
+using KurrentDB.Core.Services.Storage.ReaderIndex;
+using KurrentDB.Core.TransactionLog;
+using KurrentDB.Core.TransactionLog.Chunks;
+using KurrentDB.Core.TransactionLog.LogRecords;
+using KurrentDB.Core.Util;
 using NUnit.Framework;
+using Serilog;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 
@@ -93,7 +94,7 @@ public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : Specificatio
 		await readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read(), CancellationToken.None);
 		ReadIndex = readIndex;
 
-		var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
+		var scavenger = new TFChunkScavenger<TStreamId>(Log.Logger, _dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 			_logFormat.Metastreams,
 			unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 		await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
