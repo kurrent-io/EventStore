@@ -36,13 +36,8 @@ public class EventTypeIndex(DuckDb db) {
 	readonly Dictionary<long, long> Sequences = new();
 
 	public void Init() {
-		var connection = db.GetOrOpenConnection();
-		List<ReferenceRecord> ids;
-		try {
-			ids = connection.Query<ReferenceRecord>("select * from event_type").ToList();
-		} finally {
-			db.ReturnConnection(connection);
-		}
+		using var connection = db.GetOrOpenConnection();
+		var ids = connection.Query<ReferenceRecord>("select * from event_type").ToList();
 
 		EventTypeIds = ids.ToDictionary(x => x.id, x => x.name);
 		EventTypes = ids.ToDictionary(x => x.name, x => x.id);
@@ -54,14 +49,9 @@ public class EventTypeIndex(DuckDb db) {
 
 		const string query = "select event_type, max(event_type_seq) from idx_all group by event_type";
 
-		connection = db.GetOrOpenConnection();
-		try {
-			var sequences = connection.Query<(long Id, long Sequence)>(query);
-			foreach (var sequence in sequences) {
-				Sequences[sequence.Id] = sequence.Sequence;
-			}
-		} finally {
-			db.ReturnConnection(connection);
+		var sequences = connection.Query<(long Id, long Sequence)>(query);
+		foreach (var sequence in sequences) {
+			Sequences[sequence.Id] = sequence.Sequence;
 		}
 	}
 
@@ -80,15 +70,10 @@ public class EventTypeIndex(DuckDb db) {
 		                     from idx_all where event_type=$et and event_type_seq>=$start and event_type_seq<=$end
 		                     """;
 
-		var duration = TempIndexMetrics.MeasureIndex("duck_get_et_range");
-		var connection = db.GetOrOpenConnection();
+		using var duration = TempIndexMetrics.MeasureIndex("duck_get_et_range");
+		using var connection = db.GetOrOpenConnection();
 
-		try {
-			return connection.Query<EventTypeRecord>(query, new { et = eventTypeId, start = fromEventNumber, end = toEventNumber }).ToList();
-		} finally {
-			duration.Dispose();
-			db.ReturnConnection(connection);
-		}
+		return connection.Query<EventTypeRecord>(query, new { et = eventTypeId, start = fromEventNumber, end = toEventNumber }).ToList();
 	}
 
 	public SequenceRecord Handle(IMessageConsumeContext ctx) {
@@ -101,12 +86,8 @@ public class EventTypeIndex(DuckDb db) {
 
 		var id = ++Seq;
 
-		var connection = db.GetOrOpenConnection();
-		try {
-			connection.Execute(Sql, new { id, name = ctx.MessageType });
-		} finally {
-			db.ReturnConnection(connection);
-		}
+		using var connection = db.GetOrOpenConnection();
+		connection.Execute(Sql, new { id, name = ctx.MessageType });
 
 		EventTypes[ctx.MessageType] = id;
 		EventTypeIds[id] = ctx.MessageType;

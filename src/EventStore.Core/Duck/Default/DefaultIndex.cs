@@ -26,22 +26,14 @@ public class DefaultIndex<TStreamId> : Disposable {
 
 	public ulong? GetLastPosition() {
 		const string query = "select max(log_position) from idx_all";
-		var connection = _db.GetOrOpenConnection();
-		try {
-			return connection.Query<ulong?>(query).FirstOrDefault();
-		} finally {
-			_db.ReturnConnection(connection);
-		}
+		using var connection = _db.GetOrOpenConnection();
+		return connection.Query<ulong?>(query).FirstOrDefault();
 	}
 
 	public ulong? GetLastSequence() {
 		const string query = "select max(seq) from idx_all";
-		var connection = _db.GetOrOpenConnection();
-		try {
-			return connection.Query<ulong?>(query).FirstOrDefault();
-		} finally {
-			_db.ReturnConnection(connection);
-		}
+		using var connection = _db.GetOrOpenConnection();
+		return connection.Query<ulong?>(query).FirstOrDefault();
 	}
 
 	internal StreamIndex StreamIndex;

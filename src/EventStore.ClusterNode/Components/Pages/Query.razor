@@ -102,7 +102,7 @@
 		var watch = new Stopwatch();
 		watch.Start();
 
-		var connection = DuckDb.GetOrOpenConnection();
+		await using var connection = DuckDb.GetOrOpenConnection();
 		try {
 			_items = (IEnumerable<IDictionary<string, object>>)connection.Query(sql);
 			watch.Stop();
@@ -113,7 +113,6 @@
 		}
 		finally {
 			_showProgress = false;
-			DuckDb.ReturnConnection(connection);
 		}
 	}
 

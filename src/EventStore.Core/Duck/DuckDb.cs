@@ -12,8 +12,8 @@ using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core.Duck;
 
 public class DuckDb(TFChunkDbConfig dbConfig) {
-	private readonly string _connectionString = $"Data Source={Path.Combine(dbConfig.Path, "index.db")};";
-	private readonly ConcurrentBag<DuckDBConnection> _connectionPool = new();
+	public readonly string ConnectionString = $"Data Source={Path.Combine(dbConfig.Path, "index.db")};";
+	readonly ConcurrentBag<DuckDbPooledConnection> _connectionPool = [];
 
 	public void InitDb() {
 		using var connection = OpenConnection();
@@ -21,14 +21,14 @@ public class DuckDb(TFChunkDbConfig dbConfig) {
 	}
 
 	public DuckDBConnection OpenConnection() {
-		var connection = new DuckDBConnection(_connectionString);
+		var connection = new DuckDBConnection(ConnectionString);
 		connection.Open();
 		return connection;
 	}
 
-	public DuckDBConnection GetOrOpenConnection() {
+	public DuckDbPooledConnection GetOrOpenConnection() {
 		if (!_connectionPool.TryTake(out var connection)) {
-			connection = new(_connectionString);
+			connection = new(this);
 			connection.Open();
 
 			Debug.Assert(connection.State is ConnectionState.Open);
@@ -37,7 +37,7 @@ public class DuckDb(TFChunkDbConfig dbConfig) {
 		return connection;
 	}
 
-	public void ReturnConnection(DuckDBConnection connection) {
+	public void ReturnConnection(DuckDbPooledConnection connection) {
 		Debug.Assert(connection.State is ConnectionState.Open);
 
 		_connectionPool.Add(connection);

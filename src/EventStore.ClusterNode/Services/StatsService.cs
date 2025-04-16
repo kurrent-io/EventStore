@@ -11,10 +11,9 @@ namespace EventStore.ClusterNode.Services;
 
 class StatsService(DuckDb db) {
 	public CombinedStats[] GetStats() {
-		var connection = db.GetOrOpenConnection();
+		using var connection = db.GetOrOpenConnection();
 		var categories = connection.Query<CategoryStats>(CategoriesSql);
 		var eventTypes = connection.Query<CategoryEventTypeStats>(CategoriesEventTypesSql);
-		db.ReturnConnection(connection);
 		return categories.GroupJoin(eventTypes, x => x.CategoryId, y => y.CategoryId, (x, y) => new CombinedStats(x, y.ToArray())).ToArray();
 	}
 

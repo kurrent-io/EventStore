@@ -88,15 +88,11 @@ class StreamIndex : Disposable {
 				try {
 					const string sql = "select * from streams where id in $ids";
 
-					var connection = _db.GetOrOpenConnection();
-					try {
-						var records = connection.Query<ReferenceRecord>(sql, new { ids = uncached });
-						foreach (var record in records) {
-							_streamCache.Set(record.id, record.name, _options);
-							result.Add(record.id, record.name);
-						}
-					} finally {
-						_db.ReturnConnection(connection);
+					using var connection = _db.GetOrOpenConnection();
+					var records = connection.Query<ReferenceRecord>(sql, new { ids = uncached });
+					foreach (var record in records) {
+						_streamCache.Set(record.id, record.name, _options);
+						result.Add(record.id, record.name);
 					}
 
 					return result;
@@ -123,12 +119,8 @@ class StreamIndex : Disposable {
 	long? GetStreamIdFromDb(string streamName) {
 		const string sql = "select id from streams where name=$name";
 
-		var connection = _db.GetOrOpenConnection();
-		try {
-			return connection.Query<long?>(sql, new { name = streamName }).SingleOrDefault();
-		} finally {
-			_db.ReturnConnection(connection);
-		}
+		using var connection = _db.GetOrOpenConnection();
+		return connection.Query<long?>(sql, new { name = streamName }).SingleOrDefault();
 	}
 
 	static readonly string StreamSql = Sql.AppendIndexSql.Replace("{table}", "streams");

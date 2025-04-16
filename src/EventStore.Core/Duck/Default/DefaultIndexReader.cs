@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Dapper;
 using EventStore.Core.Metrics;
@@ -19,7 +18,6 @@ class DefaultIndexReader<TStreamId>(DuckDb db, DefaultIndexHandler<TStreamId> ha
 	protected override long GetLastNumber(long id) => handler.LastSequence - 1;
 
 	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long _, long fromEventNumber, long toEventNumber) {
-		// Log.Debug("Querying default index from {From} to {To}", fromEventNumber, toEventNumber);
 		var range = QueryAll(fromEventNumber, toEventNumber);
 		var indexPrepares = range.Select(x => new IndexedPrepare(x.seq, x.event_number, x.log_position));
 		return indexPrepares;
@@ -29,18 +27,11 @@ class DefaultIndexReader<TStreamId>(DuckDb db, DefaultIndexHandler<TStreamId> ha
 
 	public override bool OwnStream(string streamId) => streamId == "$everything";
 
-	// [MethodImpl(MethodImplOptions.Synchronized)]
 	List<AllRecord> QueryAll(long fromEventNumber, long toEventNumber) {
 		const string query = "select seq, log_position, event_number from idx_all where seq>=$start and seq<=$end";
 
-		var duration = TempIndexMetrics.MeasureIndex("duck_get_all_range");
-		var connection = db.GetOrOpenConnection();
-		try {
-			return connection
-				.Query<AllRecord>(query, new { start = fromEventNumber, end = toEventNumber }).ToList();
-		} finally {
-			duration.Dispose();
-			db.ReturnConnection(connection);
-		}
+		using var duration = TempIndexMetrics.MeasureIndex("duck_get_all_range");
+		using var connection = db.GetOrOpenConnection();
+		return connection.Query<AllRecord>(query, new { start = fromEventNumber, end = toEventNumber }).ToList();
 	}
 }
