@@ -3,34 +3,12 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Dapper;
 using EventStore.Core.Data;
 using EventStore.Core.Metrics;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using Eventuous.Subscriptions.Context;
 
 namespace EventStore.Core.Duck.Default;
-
-class EventTypeIndexReader<TStreamId>(EventTypeIndex eventTypeIndex, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
-	protected override long GetId(string streamName) {
-		if (!streamName.StartsWith("$etype-")) {
-			return EventNumber.Invalid;
-		}
-
-		var eventType = streamName[(streamName.IndexOf('-') + 1)..];
-		return eventTypeIndex.EventTypes.TryGetValue(eventType, out var id) ? id : ExpectedVersion.NoStream;
-	}
-
-	protected override long GetLastNumber(long id) => eventTypeIndex.GetLastEventNumber(id);
-
-	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber)
-		=> eventTypeIndex.GetRecords(id, fromEventNumber, toEventNumber);
-
-	public override ValueTask<long> GetLastIndexedPosition() => ValueTask.FromResult(eventTypeIndex.LastPosition);
-
-	public override bool OwnStream(string streamId) => streamId.StartsWith("$etype-");
-}
 
 public class EventTypeIndex(DuckDb db) {
 	Dictionary<long, string> _eventTypeIds = new();

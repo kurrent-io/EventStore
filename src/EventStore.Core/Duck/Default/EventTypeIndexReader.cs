@@ -8,24 +8,24 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Duck.Default;
 
-class CategoryIndexReader<TStreamId>(CategoryIndex categoryIndex, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
-	const string Prefix = "$idx-ce-";
+class EventTypeIndexReader<TStreamId>(EventTypeIndex eventTypeIndex, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
+	const string Prefix = "$idx-et-";
 
 	protected override long GetId(string streamName) {
 		if (!streamName.StartsWith(Prefix)) {
-			return ExpectedVersion.Invalid;
+			return EventNumber.Invalid;
 		}
 
-		var category = streamName[8..];
-		return categoryIndex._categories.TryGetValue(category, out var id) ? id : ExpectedVersion.NoStream;
+		var eventType = streamName[8..];
+		return eventTypeIndex.EventTypes.TryGetValue(eventType, out var id) ? id : ExpectedVersion.NoStream;
 	}
 
-	protected override long GetLastNumber(long id) => categoryIndex.GetLastEventNumber(id);
+	protected override long GetLastNumber(long id) => eventTypeIndex.GetLastEventNumber(id);
 
 	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber)
-		=> categoryIndex.GetRecords(id, fromEventNumber, toEventNumber);
+		=> eventTypeIndex.GetRecords(id, fromEventNumber, toEventNumber);
 
-	public override ValueTask<long> GetLastIndexedPosition() => ValueTask.FromResult(categoryIndex.LastPosition);
+	public override ValueTask<long> GetLastIndexedPosition() => ValueTask.FromResult(eventTypeIndex.LastPosition);
 
 	public override bool OwnStream(string streamId) => streamId.StartsWith(Prefix);
 }
