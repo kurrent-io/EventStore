@@ -35,15 +35,9 @@ public sealed class MonitoringService : IDisposable {
 		T measurement,
 		ReadOnlySpan<KeyValuePair<string, object>> tags,
 		object state) {
-		if (instrument.Name.StartsWith("eventstore")) {
-			Console.WriteLine($"{instrument.Name} recorded measurement ({typeof(T).Name}) {measurement}");
-		}
-
-		if (instrument.Name == "kestrel.active_connections" && measurement is long l) {
-			Interlocked.Add(ref _nrActiveConnections, l);
-			DataUpdated?.Invoke(null, EventArgs.Empty);
-			Log.Information("Active connections changed by {delta} to {number}", l, _nrActiveConnections);
-		}
+		if (instrument.Name != "kestrel.active_connections" || measurement is not long l) return;
+		Interlocked.Add(ref _nrActiveConnections, l);
+		DataUpdated?.Invoke(null, EventArgs.Empty);
 	}
 
 	public event EventHandler<EventArgs> DataUpdated;
