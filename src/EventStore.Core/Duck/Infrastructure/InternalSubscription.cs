@@ -98,10 +98,6 @@ public class InternalSubscription(IPublisher publisher, ICheckpointStore checkpo
 			await _sub.DisposeAsync();
 		}
 	}
-
-	class NoFilter : IEventFilter {
-		public bool IsEventAllowed(EventRecord eventRecord) => true;
-	}
 }
 
 public record InternalSubscriptionOptions : SubscriptionWithCheckpointOptions;

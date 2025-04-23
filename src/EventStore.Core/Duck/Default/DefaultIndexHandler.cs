@@ -1,5 +1,7 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using DuckDB.NET.Data;
 using EventStore.Common.Log;
@@ -12,7 +14,7 @@ namespace EventStore.Core.Duck.Default;
 public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable {
 	readonly DefaultIndex<TStreamId> _defaultIndex;
 	readonly DuckDBConnection _connection;
-	readonly SemaphoreSlim _semaphore = new(1);
+	readonly object _lock = new();
 
 	ulong _seq;
 	int _page;
@@ -41,19 +43,20 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 		var et = _defaultIndex.EventTypeIndex.Handle(context);
 		var cat = _defaultIndex.CategoryIndex.Handle(context);
 
-		_semaphore.Wait();
-		var row = _appender.CreateRow();
-		row.AppendValue(_seq++);
-		row.AppendValue((int)context.EventNumber);
-		row.AppendValue(context.GlobalPosition);
-		row.AppendValue(context.Created);
-		row.AppendValue(streamId);
-		row.AppendValue((int)et.Id);
-		row.AppendValue(et.Sequence);
-		row.AppendValue((int)cat.Id);
-		row.AppendValue(cat.Sequence);
-		row.EndRow();
-		_semaphore.Release();
+		lock (_lock) {
+			var row = _appender.CreateRow();
+			row.AppendValue(_seq++);
+			row.AppendValue((int)context.EventNumber);
+			row.AppendValue(context.GlobalPosition);
+			row.AppendValue(context.Created);
+			row.AppendValue(streamId);
+			row.AppendValue((int)et.Id);
+			row.AppendValue(et.Sequence);
+			row.AppendValue((int)cat.Id);
+			row.AppendValue(cat.Sequence);
+			row.EndRow();
+		}
+
 		_page++;
 		LastPosition = (long)context.GlobalPosition;
 
@@ -70,7 +73,6 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 		if (_disposing || _disposed) return;
 		_disposing = true;
 		Commit(false);
-		_semaphore.Dispose();
 		_disposed = true;
 		_connection.Dispose();
 		_defaultIndex.Dispose();
@@ -80,14 +82,15 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 
 	public void Commit(bool reopen = true) {
 		if (_appenderDisposed || _page == 0) return;
-		_semaphore.Wait();
-		_appender.Dispose();
-		_appenderDisposed = true;
-		Logger.Debug("Committed {Count} records to index at sequence {Seq}", _page, _seq);
-		_page = 0;
-		if (!reopen) return;
-		_appender = _connection.CreateAppender("idx_all");
-		_semaphore.Release();
+		lock (_lock) {
+			_appender.Dispose();
+			_appenderDisposed = true;
+			Logger.Debug("Committed {Count} records to index at sequence {Seq}", _page, _seq);
+			_page = 0;
+			if (!reopen) return;
+			_appender = _connection.CreateAppender("idx_all");
+		}
+
 		_appenderDisposed = false;
 	}
 

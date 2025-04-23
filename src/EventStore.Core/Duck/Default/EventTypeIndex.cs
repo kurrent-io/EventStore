@@ -1,6 +1,8 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Dapper;
 using EventStore.Core.Data;
@@ -31,31 +33,31 @@ class EventTypeIndexReader<TStreamId>(EventTypeIndex eventTypeIndex, IReadIndex<
 }
 
 public class EventTypeIndex(DuckDb db) {
-	public Dictionary<long, string> EventTypeIds = new();
+	Dictionary<long, string> _eventTypeIds = new();
 	public Dictionary<string, long> EventTypes = new();
-	readonly Dictionary<long, long> Sequences = new();
+	readonly Dictionary<long, long> _sequences = new();
 
 	public void Init() {
 		using var connection = db.GetOrOpenConnection();
 		var ids = connection.Query<ReferenceRecord>("select * from event_type").ToList();
 
-		EventTypeIds = ids.ToDictionary(x => x.id, x => x.name);
+		_eventTypeIds = ids.ToDictionary(x => x.id, x => x.name);
 		EventTypes = ids.ToDictionary(x => x.name, x => x.id);
-		Seq = EventTypeIds.Count > 0 ? EventTypeIds.Keys.Max() : 0;
+		Seq = _eventTypeIds.Count > 0 ? _eventTypeIds.Keys.Max() : 0;
 
 		foreach (var id in ids) {
-			Sequences[id.id] = -1;
+			_sequences[id.id] = -1;
 		}
 
 		const string query = "select event_type, max(event_type_seq) from idx_all group by event_type";
 
 		var sequences = connection.Query<(long Id, long Sequence)>(query);
 		foreach (var sequence in sequences) {
-			Sequences[sequence.Id] = sequence.Sequence;
+			_sequences[sequence.Id] = sequence.Sequence;
 		}
 	}
 
-	public long GetLastEventNumber(long id) => Sequences.TryGetValue(id, out var size) ? size : ExpectedVersion.NoStream;
+	public long GetLastEventNumber(long id) => _sequences.TryGetValue(id, out var size) ? size : ExpectedVersion.NoStream;
 
 	public IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
 		var range = QueryEventType(id, fromEventNumber, toEventNumber);
@@ -63,7 +65,6 @@ public class EventTypeIndex(DuckDb db) {
 		return indexPrepares;
 	}
 
-	// [MethodImpl(MethodImplOptions.Synchronized)]
 	List<EventTypeRecord> QueryEventType(long eventTypeId, long fromEventNumber, long toEventNumber) {
 		const string query = """
 		                     select event_type_seq, log_position, event_number
@@ -79,8 +80,8 @@ public class EventTypeIndex(DuckDb db) {
 	public SequenceRecord Handle(IMessageConsumeContext ctx) {
 		LastPosition = (long)ctx.GlobalPosition;
 		if (EventTypes.TryGetValue(ctx.MessageType, out var val)) {
-			var next = Sequences[val] + 1;
-			Sequences[val] = next;
+			var next = _sequences[val] + 1;
+			_sequences[val] = next;
 			return new(val, next);
 		}
 
@@ -90,8 +91,8 @@ public class EventTypeIndex(DuckDb db) {
 		connection.Execute(Sql, new { id, name = ctx.MessageType });
 
 		EventTypes[ctx.MessageType] = id;
-		EventTypeIds[id] = ctx.MessageType;
-		Sequences[id] = 0;
+		_eventTypeIds[id] = ctx.MessageType;
+		_sequences[id] = 0;
 		return new(id, 0);
 	}
 

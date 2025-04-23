@@ -7,12 +7,10 @@ using System.Threading.Tasks;
 using Dapper;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
 class DefaultIndexReader<TStreamId>(DuckDb db, DefaultIndexHandler<TStreamId> handler, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
-	static readonly ILogger Log = Serilog.Log.ForContext<DefaultIndexReader<TStreamId>>();
 	protected override long GetId(string streamName) => 0;
 
 	protected override long GetLastNumber(long id) => handler.LastSequence - 1;

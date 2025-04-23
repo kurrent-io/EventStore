@@ -16,7 +16,7 @@ class CategoryIndexReader<TStreamId>(CategoryIndex categoryIndex, IReadIndex<TSt
 		}
 
 		var category = streamName[(dashIndex + 1)..];
-		return categoryIndex.Categories.TryGetValue(category, out var id) ? id : ExpectedVersion.NoStream;
+		return categoryIndex._categories.TryGetValue(category, out var id) ? id : ExpectedVersion.NoStream;
 	}
 
 	protected override long GetLastNumber(long id) => categoryIndex.GetLastEventNumber(id);

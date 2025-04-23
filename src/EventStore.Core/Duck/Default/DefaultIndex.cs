@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Linq;
 using Dapper;
 using DotNext;
@@ -43,7 +46,6 @@ public class DefaultIndex<TStreamId> : Disposable {
 	internal readonly CategoryIndexReader<TStreamId> CategoryIndexReader;
 	internal readonly EventTypeIndexReader<TStreamId> EventTypeIndexReader;
 	internal DefaultIndexReader<TStreamId> DefaultIndexReader;
-
 	internal DefaultIndexHandler<TStreamId> Handler;
 
 	protected override void Dispose(bool disposing) {

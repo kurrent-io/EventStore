@@ -27,7 +27,6 @@ class DuckDbIndexBuilder<TStreamId> : IAsyncHandle<SystemReady>, IAsyncHandle<Be
 		_publisher = publisher;
 		_db = db;
 		DefaultIndex = new(_db, index);
-		new InlineFunctions<TStreamId>(_db, publisher).Run();
 		_checkpointStore = new(DefaultIndex, DefaultIndex.Handler);
 	}
 
@@ -46,6 +45,5 @@ class DuckDbIndexBuilder<TStreamId> : IAsyncHandle<SystemReady>, IAsyncHandle<Be
 		await Task.Delay(100, token);
 		DefaultIndex.Dispose();
 		_db.Close();
-		// await _subscription.Unsubscribe(id => Log.Information("Index subscription {Subscription} unsubscribed", id), token);
 	}
 }

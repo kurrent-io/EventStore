@@ -1,7 +1,8 @@
-using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Dapper;
 using EventStore.Core.Data;
 using EventStore.Core.Metrics;
@@ -10,14 +11,14 @@ using Eventuous.Subscriptions.Context;
 namespace EventStore.Core.Duck.Default;
 
 class CategoryIndex(DuckDb db) {
-	internal Dictionary<string, long> Categories = new();
+	internal Dictionary<string, long> _categories = new();
 	readonly Dictionary<long, long> _categorySizes = new();
 
 	public void Init() {
 		using var connection = db.GetOrOpenConnection();
 		var ids = connection.Query<ReferenceRecord>("select * from category").ToList();
 
-		Categories = ids.ToDictionary(x => x.name, x => x.id);
+		_categories = ids.ToDictionary(x => x.name, x => x.id);
 		foreach (var id in ids) {
 			_categorySizes[id.id] = -1;
 		}
@@ -29,7 +30,7 @@ class CategoryIndex(DuckDb db) {
 			_categorySizes[sequence.Id] = sequence.Sequence;
 		}
 
-		Seq = Categories.Count > 0 ? Categories.Values.Max() : 0;
+		Seq = _categories.Count > 0 ? _categories.Values.Max() : 0;
 	}
 
 	public IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
@@ -38,7 +39,6 @@ class CategoryIndex(DuckDb db) {
 		return indexPrepares;
 	}
 
-	// [MethodImpl(MethodImplOptions.Synchronized)]
 	List<CategoryRecord> QueryCategory(long id, long fromEventNumber, long toEventNumber) {
 		const string query = """
 		                     select category_seq, log_position, event_number
@@ -54,27 +54,15 @@ class CategoryIndex(DuckDb db) {
 
 	public long GetLastEventNumber(long categoryId) => _categorySizes.TryGetValue(categoryId, out var size) ? size : ExpectedVersion.NoStream;
 
-	long GetCategoryLastEventNumber(long categoryId) {
-		using var connection = db.GetOrOpenConnection();
-		return connection
-			.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId })
-			.SingleOrDefault();
-	}
-
 	static string GetStreamCategory(string streamName) {
 		var dashIndex = streamName.IndexOf('-');
 		return dashIndex == -1 ? streamName : streamName[..dashIndex];
 	}
 
-	string GetCategoryName(string streamName) {
-		var dashIndex = streamName.IndexOf('-');
-		return dashIndex == -1 ? throw new InvalidOperationException($"Stream {streamName} is not a category stream") : streamName[(dashIndex + 1)..];
-	}
-
 	public SequenceRecord Handle(IMessageConsumeContext ctx) {
 		var categoryName = GetStreamCategory(ctx.Stream.ToString());
 		LastPosition = (long)ctx.GlobalPosition;
-		if (Categories.TryGetValue(categoryName, out var val)) {
+		if (_categories.TryGetValue(categoryName, out var val)) {
 			var next = _categorySizes[val] + 1;
 			_categorySizes[val] = next;
 			return new(val, next);
@@ -84,7 +72,7 @@ class CategoryIndex(DuckDb db) {
 
 		using var connection = db.GetOrOpenConnection();
 		connection.Execute(CatSql, new { id, name = categoryName });
-		Categories[categoryName] = id;
+		_categories[categoryName] = id;
 		_categorySizes[id] = 0;
 		return new(id, 0);
 	}
