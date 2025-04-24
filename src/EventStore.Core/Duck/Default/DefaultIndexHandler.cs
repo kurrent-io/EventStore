@@ -18,6 +18,7 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 
 	ulong _seq;
 	int _page;
+	long _lastLogPosition;
 	DuckDBAppender _appender;
 
 	static readonly ILogger Logger = Log.Logger.ForContext("DefaultIndexHandler");
@@ -57,8 +58,8 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 			row.EndRow();
 		}
 
+		_lastLogPosition = (long)context.GlobalPosition;
 		_page++;
-		LastPosition = (long)context.GlobalPosition;
 
 		return ValueTask.FromResult(EventHandlingStatus.Success);
 	}
@@ -89,6 +90,7 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 			_page = 0;
 			if (!reopen) return;
 			_appender = _connection.CreateAppender("idx_all");
+			LastPosition = _lastLogPosition;
 		}
 
 		_appenderDisposed = false;

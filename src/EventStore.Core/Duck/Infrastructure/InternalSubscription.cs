@@ -22,10 +22,19 @@ namespace EventStore.Core.Duck.Infrastructure;
 
 public class InternalSubscription(IPublisher publisher, ICheckpointStore checkpointStore, params IEventHandler[] eventHandlers)
 	: EventSubscriptionWithCheckpoint<InternalSubscriptionOptions>(
-		new() { SubscriptionId = "indexBuilder", ThrowOnError = true, CheckpointCommitBatchSize = 50000, CheckpointCommitDelayMs = 10000 },
-		checkpointStore, new ConsumePipe().AddDefaultConsumer(eventHandlers),
-		1, SubscriptionKind.All, new SerilogLoggerFactory(),
-		new EventSerializer(), null) {
+		new() {
+			SubscriptionId = "indexBuilder",
+			ThrowOnError = true,
+			CheckpointCommitBatchSize = 50000,
+			CheckpointCommitDelayMs = 10000
+		},
+		checkpointStore,
+		new ConsumePipe().AddDefaultConsumer(eventHandlers),
+		1,
+		SubscriptionKind.All,
+		new SerilogLoggerFactory(),
+		new EventSerializer(),
+		null) {
 	const uint DefaultCheckpointIntervalMultiplier = 1000;
 
 	readonly CancellationTokenSource _cts = new();
