@@ -27,6 +27,7 @@ class DuckDbIndexBuilder<TStreamId> : IAsyncHandle<SystemReady>, IAsyncHandle<Be
 		_publisher = publisher;
 		_db = db;
 		DefaultIndex = new(_db, index);
+		new InlineFunctions<TStreamId>(_db, publisher).Run();
 		_checkpointStore = new(DefaultIndex, DefaultIndex.Handler);
 	}
 
