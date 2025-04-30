@@ -3,6 +3,7 @@
 
 using System;
 using KurrentDB.Core.LogV3;
+using KurrentDB.Core.Data;
 using KurrentDB.LogV3;
 using StreamId = System.UInt32;
 
@@ -23,6 +24,8 @@ public class LogV3StreamRecord : LogV3Record<StringPayloadRecord<Raw.StreamHeade
 	// so we can see the stream name in the webui if we want
 	public ReadOnlyMemory<byte> Data => Record.Payload;
 	public ReadOnlyMemory<byte> Metadata => ReadOnlyMemory<byte>.Empty;
+	public SchemaInfo DataSchemaInfo => SchemaInfo.None;
+	public SchemaInfo MetadataSchemaInfo => SchemaInfo.None;
 
 	public string StreamName => Record.StringPayload;
 	public StreamId StreamNumber => Record.SubHeader.ReferenceNumber;
