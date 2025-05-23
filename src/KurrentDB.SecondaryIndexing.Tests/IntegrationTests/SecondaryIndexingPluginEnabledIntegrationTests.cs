@@ -1,7 +1,10 @@
 // Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
 // Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
+using System.Text;
+using KurrentDB.SecondaryIndexing.Indices.Category;
 using KurrentDB.SecondaryIndexing.Indices.Default;
+using KurrentDB.SecondaryIndexing.Indices.EventType;
 using KurrentDB.SecondaryIndexing.Tests.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
 
@@ -29,10 +32,39 @@ public abstract class SecondaryIndexingPluginEnabledIntegrationTests<TStreamId>(
 
 	[Fact]
 	public async Task ReadsIndexStream_ForEnabledPlugin() {
-		var appendResult = await fixture.AppendToStream(RandomStreamName(), _expectedEventData);
+		// Given
+		var streamName = RandomStreamName();
+		var appendResult = await fixture.AppendToStream(streamName, _expectedEventData);
 
-		var readResult = await fixture.ReadUntil(DefaultIndexConstants.IndexName, appendResult.Position);
+		// When
+		var allReadResult = await fixture.ReadUntil(
+			DefaultIndexConstants.IndexName,
+			appendResult.Position
+		);
+		var categoryReadResult = await fixture.ReadUntil(
+			$"{CategoryIndexConstants.IndexPrefix}${CategoryName}",
+			appendResult.Position
+		);
+		var eventTypeReadResult = await fixture.ReadUntil(
+			$"{EventTypeIndexConstants.IndexPrefix}test",
+			appendResult.Position
+		);
 
-		Assert.NotEmpty(readResult);
+		// Then
+		Assert.NotEmpty(allReadResult);
+		Assert.NotEmpty(categoryReadResult);
+		Assert.NotEmpty(eventTypeReadResult);
+
+		var allResults = allReadResult.Where(e => e.Event.EventStreamId == streamName).ToList();
+		var categoryResults = categoryReadResult.Where(e => e.Event.EventStreamId == streamName).ToList();
+		var eventTypeResults = eventTypeReadResult.Where(e => e.Event.EventStreamId == streamName).ToList();
+
+		Assert.Equal(_expectedEventData.Length, allResults.Count);
+		Assert.Equal(_expectedEventData.Length, categoryResults.Count);
+		Assert.Equal(_expectedEventData.Length, eventTypeResults.Count);
+
+		Assert.All(allResults, e => Assert.Contains(Encoding.UTF8.GetString(e.Event.Data.Span), _expectedEventData));
+		Assert.All(categoryResults, e => Assert.Contains(Encoding.UTF8.GetString(e.Event.Data.Span), _expectedEventData));
+		Assert.All(eventTypeResults, e => Assert.Contains(Encoding.UTF8.GetString(e.Event.Data.Span), _expectedEventData));
 	}
 }
