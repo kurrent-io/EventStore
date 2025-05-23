@@ -1,8 +1,13 @@
+using DuckDB.NET.Data;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Kurrent.Surge.Projectors;
+using Kurrent.Surge.Schema.Validation;
 using KurrentDB.Surge.Testing.Messages.Telemetry;
 using KurrentDB.SchemaRegistry.Tests.Fixtures;
 using KurrentDB.Protocol.Registry.V2;
+using KurrentDB.SchemaRegistry.Data;
+using KurrentDB.SchemaRegistry.Protocol.Schemas.Events;
 
 namespace KurrentDB.SchemaRegistry.Tests.Schemas.Data;
 
@@ -78,5 +83,51 @@ public class SchemaQueriesTests : SchemaRegistryServerTestFixture {
 				.Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1.Seconds()))
 				.WhenTypeIs<DateTime>()
 		);
+	}
+
+	[Test]
+	public async Task list_schemas_with_name_prefix(CancellationToken cancellationToken) {
+		var fooSchemaName = NewSchemaName("foo");
+		var barSchemaName = NewSchemaName("bar");
+
+		var connection = DuckDBConnectionProvider.GetConnection();
+		var projection = new SchemaProjections();
+		await projection.Setup(connection, cancellationToken);
+
+		await CreateSchema(projection, fooSchemaName, cancellationToken);
+		await CreateSchema(projection, barSchemaName, cancellationToken);
+
+		var queries = new SchemaQueries(DuckDBConnectionProvider, new NJsonSchemaCompatibilityManager());
+
+		var response = await queries.ListSchemas(new ListSchemasRequest { SchemaNamePrefix = "foo" }, cancellationToken);
+		response.Schemas.Count.Should().Be(1);
+
+		var schema = response.Schemas.First();
+		schema.SchemaName.Should().Be(fooSchemaName);
+	}
+
+	private async Task CreateSchema(SchemaProjections projections, string schemaName, CancellationToken cancellationToken) {
+		var record = await CreateRecord(
+			new SchemaCreated {
+				SchemaName = schemaName,
+				SchemaDefinition = ByteString.CopyFromUtf8(Faker.Lorem.Text()),
+				Description = Faker.Lorem.Text(),
+				DataFormat = SchemaDataFormat.Json,
+				Compatibility = Faker.Random.Enum(CompatibilityMode.Unspecified),
+				Tags = {
+					new Dictionary<string, string> {
+						[Faker.Lorem.Word()] = Faker.Lorem.Word(),
+						[Faker.Lorem.Word()] = Faker.Lorem.Word(),
+						[Faker.Lorem.Word()] = Faker.Lorem.Word()
+					}
+				},
+				SchemaVersionId = Guid.NewGuid().ToString(),
+				VersionNumber = 1,
+				CreatedAt = Timestamp.FromDateTimeOffset(TimeProvider.GetUtcNow())
+			}
+		);
+
+		await projections.ProjectRecord(new ProjectionContext<DuckDBConnection>(_ => ValueTask.FromResult(DuckDBConnectionProvider.GetConnection()), record,
+			cancellationToken));
 	}
 }

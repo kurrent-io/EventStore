@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Bogus;
 using Kurrent.Surge.DuckDB;
 using Kurrent.Surge.Schema;
@@ -84,5 +85,12 @@ public abstract class SchemaRegistryServerTestFixture : ITestStartEventReceiver,
 			var record = await CreateRecord(message, streamId: streamId);
 			yield return configureRecord?.Invoke(i, record) ?? record;
 		}
+	}
+
+	private static string GenerateShortId() => Identifiers.GenerateShortId();
+
+	protected string NewSchemaName(string? prefix = null, [CallerMemberName] string? name = null) {
+		var prefixValue = prefix == null ? string.Empty : $"{prefix}-";
+		return $"{prefixValue}{name.Underscore()}-{GenerateShortId()}".ToLowerInvariant();
 	}
 }
