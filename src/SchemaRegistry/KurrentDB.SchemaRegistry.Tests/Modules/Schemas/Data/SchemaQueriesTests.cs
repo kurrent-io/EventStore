@@ -137,7 +137,7 @@ public class SchemaQueriesTests : SchemaRegistryServerTestFixture {
 		await projection.Setup(connection, cancellationToken);
 
 		await CreateSchema(projection, new CreateSchemaOptions { Name =  schemaName }, cancellationToken);
-		await CreateSchema(projection, new CreateSchemaOptions { Name =  schemaName, VersionNumber = 2 }, cancellationToken);
+		await UpdateSchema(projection, schemaName, 2, cancellationToken);
 
 		var queries = new SchemaQueries(DuckDBConnectionProvider, new NJsonSchemaCompatibilityManager());
 
@@ -148,7 +148,6 @@ public class SchemaQueriesTests : SchemaRegistryServerTestFixture {
 	private record CreateSchemaOptions {
 		public required string Name { get; init; }
 		public Dictionary<string, string> Tags { get; init; } = [];
-		public int VersionNumber { get; init; } = 1;
 	}
 
 	private async Task CreateSchema(SchemaProjections projections, CreateSchemaOptions options, CancellationToken cancellationToken) {
@@ -163,8 +162,25 @@ public class SchemaQueriesTests : SchemaRegistryServerTestFixture {
 					options.Tags
 				},
 				SchemaVersionId = Guid.NewGuid().ToString(),
-				VersionNumber = options.VersionNumber,
+				VersionNumber = 1,
 				CreatedAt = Timestamp.FromDateTimeOffset(TimeProvider.GetUtcNow())
+			}
+		);
+
+		await projections.ProjectRecord(new ProjectionContext<DuckDBConnection>(_ => ValueTask.FromResult(DuckDBConnectionProvider.GetConnection()), record,
+			cancellationToken));
+	}
+
+	private async Task UpdateSchema(SchemaProjections projections, string schemaName, int versionNumber,
+		CancellationToken cancellationToken) {
+		var record = await CreateRecord(
+			new SchemaVersionRegistered {
+				SchemaVersionId = Guid.NewGuid().ToString(),
+				SchemaName = schemaName,
+				VersionNumber = versionNumber,
+				SchemaDefinition = ByteString.CopyFromUtf8(Faker.Lorem.Text()),
+				DataFormat = SchemaDataFormat.Json,
+				RegisteredAt = Timestamp.FromDateTime(TimeProvider.GetUtcNow().UtcDateTime)
 			}
 		);
 
